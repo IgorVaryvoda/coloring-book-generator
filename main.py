@@ -2,15 +2,18 @@ import os
 from fpdf import FPDF
 from PIL import Image
 
-def create_coloring_book(input_folder, output_file):
+def create_coloring_book():
+    input_folder = '/home/igor/Desktop/coloring book/upscaled'
+    output_file = '/home/igor/Desktop/coloring book/upscaled/result.pdf'
     # PDF setup
     pdf = FPDF(orientation='P', unit='mm', format='Letter')
     pdf.set_auto_page_break(auto=True, margin=0)
 
     # Get list of image files
     image_files = [f for f in os.listdir(input_folder) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
-
+    print(image_files)
     for image_file in image_files:
+        print(f"Processing image: {image_file}")  # Debug statement
         # Add image page
         pdf.add_page()
         add_image_to_page(pdf, os.path.join(input_folder, image_file))
@@ -20,6 +23,7 @@ def create_coloring_book(input_folder, output_file):
 
     # Save the PDF
     pdf.output(output_file)
+    print(f"PDF saved as: {output_file}")  # Debug statement
 
 def add_image_to_page(pdf, image_path):
     # Calculate page dimensions and margins
@@ -34,20 +38,28 @@ def add_image_to_page(pdf, image_path):
     image_width = page_width - left_margin - right_margin
     image_height = page_height - top_margin - bottom_margin
 
-    # Open and resize image
+    # Open image and get dimensions
     with Image.open(image_path) as img:
-        img.thumbnail((image_width, image_height))
-        temp_path = 'temp_image.png'
-        img.save(temp_path)
+        img_width, img_height = img.size
+        aspect_ratio = img_width / img_height
 
-    # Add image to PDF
-    pdf.image(temp_path, x=left_margin, y=top_margin, w=image_width, h=image_height)
+        if image_width / image_height > aspect_ratio:
+            # Image is wider relative to its height
+            new_height = image_height
+            new_width = aspect_ratio * new_height
+        else:
+            # Image is taller relative to its width
+            new_width = image_width
+            new_height = new_width / aspect_ratio
 
-    # Remove temporary image file
-    os.remove(temp_path)
+        # Calculate position to center the image
+        x_pos = (page_width - new_width) / 2
+        y_pos = (page_height - new_height) / 2
+
+        print(f"Adding image to PDF: {image_path}")  # Debug statement
+        # Add image to PDF
+        pdf.image(image_path, x=x_pos, y=y_pos, w=new_width, h=new_height)
 
 if __name__ == "__main__":
-    input_folder = input("Enter the path to the folder containing images: ")
-    output_file = input("Enter the name of the output PDF file: ")
-    create_coloring_book(input_folder, output_file)
-    print(f"Coloring book PDF has been generated: {output_file}")
+    create_coloring_book()
+    print(f"Coloring book PDF has been generated")
